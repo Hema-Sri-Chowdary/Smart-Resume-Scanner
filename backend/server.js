@@ -428,6 +428,8 @@ app.post('/api/sample/seed', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
 // Serve frontend static build files in production or when dist folder exists
 const frontendDist = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDist)) {

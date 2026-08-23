@@ -24,6 +24,18 @@ const COMMON_SKILLS = [
   'leadership', 'team management', 'problem solving', 'communication', 'project management', 'cross-functional', 'mentorship'
 ];
 
+// Helper functions for safe regex creation with special character escaping
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildKeywordRegex(keyword) {
+  const escaped = escapeRegExp(keyword);
+  const startBoundary = /^\w/.test(keyword) ? '\\b' : '(?:^|\\s|[^a-zA-Z0-9])';
+  const endBoundary = /\w$/.test(keyword) ? '\\b' : '(?:$|\\s|[^a-zA-Z0-9])';
+  return new RegExp(`${startBoundary}${escaped}${endBoundary}`, 'i');
+}
+
 /**
  * Parses raw resume text into structured fields.
  */
@@ -59,25 +71,27 @@ function extractStructuredData(rawText, filename = 'resume.pdf') {
   const foundSkills = new Set();
 
   COMMON_SKILLS.forEach(skill => {
-    // Regex boundary check to avoid false positives (e.g. "go" inside "good")
-    const regex = new RegExp(`\\b${skill.replace('.', '\\.')}\\b`, 'i');
+    // Safely build regex handling special characters like 'c++', 'c#', 'next.js'
+    const regex = buildKeywordRegex(skill);
     if (regex.test(lowerText)) {
       // Normalize casing for display
       const normalizedSkill = skill
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ')
-        .replace(/Js\b/, 'JS')
-        .replace(/Css\b/, 'CSS')
-        .replace(/Html\b/, 'HTML')
-        .replace(/Aws\b/, 'AWS')
-        .replace(/Gcp\b/, 'GCP')
-        .replace(/Api\b/, 'API')
-        .replace(/Sql\b/, 'SQL')
+        .replace(/Js\b/i, 'JS')
+        .replace(/Css\b/i, 'CSS')
+        .replace(/Html\b/i, 'HTML')
+        .replace(/Aws\b/i, 'AWS')
+        .replace(/Gcp\b/i, 'GCP')
+        .replace(/Api\b/i, 'API')
+        .replace(/Sql\b/i, 'SQL')
         .replace(/Ci\/cd\b/i, 'CI/CD')
         .replace(/Llm\b/i, 'LLM')
         .replace(/Nlp\b/i, 'NLP')
-        .replace(/Ai\b/i, 'AI');
+        .replace(/Ai\b/i, 'AI')
+        .replace(/\bC\+\+/i, 'C++')
+        .replace(/\bC#/i, 'C#');
       
       foundSkills.add(normalizedSkill);
     }
@@ -105,7 +119,7 @@ function extractStructuredData(rawText, filename = 'resume.pdf') {
   const education = [];
   const eduKeywords = ['Bachelor', 'Master', 'Ph.D', 'PhD', 'B.S.', 'M.S.', 'B.Tech', 'M.Tech', 'B.E.', 'Computer Science', 'Degree', 'University', 'Institute', 'College'];
   lines.forEach(line => {
-    if (eduKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(line))) {
+    if (eduKeywords.some(kw => buildKeywordRegex(kw).test(line))) {
       if (line.length < 120 && !education.includes(line)) {
         education.push(line);
       }
